@@ -358,10 +358,20 @@ namespace RestSharp.Deserializers
                                            .ToList();
             string name = t.Name;
             DeserializeAsAttribute attribute = t.GetAttribute<DeserializeAsAttribute>();
+            DeserializeElementAsAttribute element = t.GetAttribute<DeserializeElementAsAttribute>();
 
-            if (attribute != null)
+            if (element != null)
+            {
+                name = element.Name;
+            }
+            else if (attribute != null)
             {
                 name = attribute.Name;
+            }
+
+            if (element != null)
+            {
+                elements = root.Descendants(name).Where(x => x.Attribute(element.Attribute).Value == element.Value).ToList();
             }
 
             if (!elements.Any())
