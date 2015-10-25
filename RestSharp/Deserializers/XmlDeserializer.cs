@@ -284,7 +284,18 @@ namespace RestSharp.Deserializers
                 {
                     // handles classes that derive from List<T>
                     // e.g. a collection that also has attributes
-                    object list = this.HandleListDerivative(root, prop.Name, type);
+                    object list;
+                    // check if the element is multivalued
+                    attributes = prop.PropertyType.GetCustomAttributes(typeof(DeserializeMultivaluedAsAttribute), false);
+                    if (attributes.Length > 0 )
+                    {
+                        // if multivalued then use the name as determined above
+                        list = this.HandleMultivaluedListDerivative(root, name, type);
+                    }
+                    else
+                    { 
+                        list = this.HandleListDerivative(root, prop.Name, type);
+                    }
 
                     prop.SetValue(x, list, null);
                 }
@@ -411,6 +422,58 @@ namespace RestSharp.Deserializers
             if (!type.IsGenericType)
             {
                 this.Map(list, root.Element(propName.AsNamespaced(this.Namespace)) ?? root);
+                // when using RootElement, the heirarchy is different
+            }
+
+            return list;
+        }
+
+        private object HandleMultivaluedListDerivative(XElement root, XName name, Type type)
+        {
+            Type t = type.IsGenericType
+                ? type.GetGenericArguments()[0]
+                : type.BaseType.GetGenericArguments()[0];
+            IList list = (IList)Activator.CreateInstance(type);
+            IList<XElement> elements = root.Descendants(name)
+                                           .ToList();
+
+            if (!elements.Any())
+            {
+                XName lowerName = name.LocalName.ToLower().AsNamespaced(this.Namespace);
+
+                elements = root.Descendants(lowerName).ToList();
+            }
+
+            if (!elements.Any())
+            {
+                XName camelName = name.LocalName.ToCamelCase(this.Culture).AsNamespaced(this.Namespace);
+
+                elements = root.Descendants(camelName).ToList();
+            }
+
+            if (!elements.Any())
+            {
+                elements = root.Descendants()
+                               .Where(e => e.Name.LocalName.RemoveUnderscoresAndDashes() == name)
+                               .ToList();
+            }
+
+            if (!elements.Any())
+            {
+                XName lowerName = name.LocalName.ToLower().AsNamespaced(this.Namespace);
+
+                elements = root.Descendants()
+                               .Where(e => e.Name.LocalName.RemoveUnderscoresAndDashes() == lowerName)
+                               .ToList();
+            }
+
+            this.PopulateListFromElements(t, elements, list);
+
+            // get properties too, not just list items
+            // only if this isn't a generic type
+            if (!type.IsGenericType)
+            {
+                this.Map(list, root.Element(name) ?? root);
                 // when using RootElement, the heirarchy is different
             }
 

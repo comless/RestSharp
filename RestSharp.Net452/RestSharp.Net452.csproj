@@ -128,6 +128,9 @@
     <Compile Include="..\RestSharp\Deserializers\DeserializeElementAsAttribute.cs">
       <Link>Deserializers\DeserializeElementAsAttribute.cs</Link>
     </Compile>
+    <Compile Include="..\RestSharp\Deserializers\DeserializeMultivaluedAsAttribute.cs">
+      <Link>Deserializers\DeserializeMultivaluedAsAttribute.cs</Link>
+    </Compile>
     <Compile Include="..\restsharp\deserializers\DotNetXmlDeserializer.cs">
       <Link>Deserializers\DotNetXmlDeserializer.cs</Link>
     </Compile>
